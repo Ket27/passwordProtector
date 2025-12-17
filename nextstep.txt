@@ -1,0 +1,12 @@
+unique username
+why on refresh it is not working
+error handling by toast container
+
+tokens expiration, refreshing them
+•Shorter token expiration (15 mins instead of 1 hour)
+•Refresh tokens (re-authenticate without full login)
+•Activity timeouts (logout after 10 mins of inactivity)
+
+K1
+123456
+
