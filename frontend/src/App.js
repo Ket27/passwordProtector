@@ -10,6 +10,7 @@ function App() {
     master_password: "",
     salt: "",
   });
+
   return (
     <div className="App">
       <Router>

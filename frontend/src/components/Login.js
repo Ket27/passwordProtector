@@ -3,6 +3,7 @@ import { IoEyeOutline } from "react-icons/io5";
 import { IoEyeOffOutline } from "react-icons/io5";
 import { useNavigate} from "react-router-dom";
 import axios from "axios";
+import { ToastContainer, toast } from 'react-toastify';
 
 const Login = ({ authChange, setDetails }) => {
   const navigate = useNavigate()
@@ -32,8 +33,10 @@ const Login = ({ authChange, setDetails }) => {
           headers: {
             "Content-type": "application/json",
           },
+          withCredentials: true 
         }
       );
+      // if(data.data.message === "")
 
       if (data.data.message === "User loggedin successfully") {
         setDetails((prev) => ({
@@ -43,12 +46,38 @@ const Login = ({ authChange, setDetails }) => {
           master_password: data.data.password,
           salt: data.data.salt,
         }));
-        localStorage.setItem("user", data.data.access_token);
+        localStorage.setItem("access_token", data.data.access_token);
         setLoading(false);
         navigate("/passwords")
       }
+
+      else {
+        toast.warn('Try login again', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+        return;
+      }
+
     } catch (err) {
-      throw err;
+      toast.error('Try login again', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+      console.log(err)
+      return;
     }
   };
 
@@ -136,6 +165,7 @@ const Login = ({ authChange, setDetails }) => {
           </div>
         </div>
       </div>
+      <ToastContainer />
     </>
   );
 };

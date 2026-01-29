@@ -1,17 +1,17 @@
 import os
 import base64
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Cookie, Header
 from structures.schemas import LoginRequest, SignupRequest
 from config.connect import get_db
 from sqlalchemy.orm import Session
 from config.security import hashPassword, verifyPassword
 from structures.models import UserModel
-from config.security import create_access_token
+from config.security import create_access_token, create_refresh_token, verify_jwt
 
 router = APIRouter()
 
 @router.post("/register")
-async def signup_user(request: SignupRequest, db:Session= Depends(get_db)):
+async def signup_user(request: SignupRequest, response:Response, db:Session= Depends(get_db)):
     try:
         if not request.username.strip() or not request.password or not request.confirm_password:
             raise HTTPException(status_code=400, detail="All fields are required")
@@ -37,7 +37,18 @@ async def signup_user(request: SignupRequest, db:Session= Depends(get_db)):
             data = {"sub": str(user.id)}
         )
 
-        return {"message": "User created successfully", "access_token": access_token, "user_id":newUser.id, "password": newUser.password, "salt": newUser.Kdf_salt}
+        refresh_token = create_refresh_token(
+            data = {"sub": str(user.id)}
+        )
+
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            samesite="lax"
+        )
+
+        return {"message": "User created successfully","access_token": access_token, "user_id":newUser.id, "password": newUser.password, "salt": newUser.Kdf_salt}
 
     except Exception as e:
         db.rollback()
@@ -45,21 +56,56 @@ async def signup_user(request: SignupRequest, db:Session= Depends(get_db)):
         raise HTTPException(status_code=500, detail="An error occurred during registration")
 
 @router.post("/login")
-async def login_user(request: LoginRequest, db:Session = Depends(get_db)):
-    print(request.username, request.password)
-    if not request.username.strip() or not request.password:
-        raise HTTPException(status_code=400, detail="All fields are required")
-    
-    user = db.query(UserModel).filter(request.username.strip() == UserModel.username).first()
+async def login_user(request: LoginRequest, response:Response, db:Session = Depends(get_db)):
+    try:
+        if not request.username.strip() or not request.password:
+            raise HTTPException(status_code=400, detail="All fields are required")
+        
+        user = db.query(UserModel).filter(request.username.strip() == UserModel.username).first()
 
-    if not user or not verifyPassword(request.password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+        if not user or not verifyPassword(request.password, user.password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        access_token = create_access_token(
+            data = {"sub": str(user.id)}
         )
-    access_token = create_access_token(
-        data = {"sub": str(user.id)}
-    )
 
-    return {"message": "User loggedin successfully", "access_token": access_token, "user_id": user.id, "password": user.password, "salt": user.Kdf_salt}
+        refresh_token = create_refresh_token(
+            data = {"sub": str(user.id)}
+        )
+
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            samesite="lax"
+        )
+
+        return {"message": "User loggedin successfully", "access_token": access_token, "user_id": user.id, "password": user.password, "salt": user.Kdf_salt}
+
+    except Exception as err:
+        print(err)
+
+@router.post("/refresh")
+async def refresh_token(refresh_token :str):
+    try:
+        if not refresh_token:
+            raise HTTPException(status_code=401, detail="Missing refresh token")
+
+        payload = verify_jwt(refresh_token, "refresh")
+        new_access_token = create_access_token(data = {"sub": str(payload)})
+        return {"access_token" : new_access_token}
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    
+# @router.get("/protectedData")
+# async def getProtected(authorization: str = Header(None)):
+#     if not authorization:
+#         raise HTTPException(401)
+    
+#     token = authorization.split(" ")[1]
+#     payload = verify_jwt(token, "access")
+#     return {"message": f"Hello {payload['sub']}"}

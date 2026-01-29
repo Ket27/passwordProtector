@@ -23,18 +23,31 @@ const LandingPage = ({ details }) => {
     fetchPasswords();
   }, []);
   const fetchPasswords = async () => {
+    if(!details.user_id){
+      navigate("/");
+      return;
+    }
+    
     try {
       setLoading(true)
-      const token = localStorage.getItem("user");
+      const token = localStorage.getItem("access_token");
       const res = await axios.get(
-        `http://localhost:8000/passwords/password/${details.user_id}`,
+        `http://localhost:8000/passwords/password/`,
         {
+          withCredentials: true,
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
         }
       );
+
+      if(res.data.message === "Refresh token expired"){
+        localStorage.removeItem("access_token");
+        navigate("/");
+        return;
+      }
+
       const key = await DeriveKey(details.master_password, details.salt);
       const newData =  await Promise.all(res.data.passwords.map((encryption) => Decrypt(encryption.id,encryption.account_name,key,encryption.ciphertext,encryption.iv)));
 
@@ -53,7 +66,7 @@ const LandingPage = ({ details }) => {
       const encryption = await Encrypt(key, newAccount.password);
 
       try {
-        const token = localStorage.getItem("user");
+        const token = localStorage.getItem("access_token");
         const data = await axios.post(
           `http://localhost:8000/passwords/password/${details.user_id}`,
           {
@@ -81,7 +94,7 @@ const LandingPage = ({ details }) => {
 
   const handleDelete = async (id) => {
     try{
-      const token = localStorage.getItem("user");
+      const token = localStorage.getItem("access_token");
       await axios.delete(`http://localhost:8000/passwords/password/${details.user_id}?passwordId=${id}`,
         {
           headers :{

@@ -36,6 +36,7 @@ const Signup = ({authChange, setDetails}) => {
           headers: {
             "Content-type": "application/json",
           },
+          withCredentials: true
         }
       );
 
@@ -47,7 +48,7 @@ const Signup = ({authChange, setDetails}) => {
           master_password: data.data.password,
           salt: data.data.salt,
         }));
-        localStorage.setItem("user", data.data.access_token);
+        localStorage.setItem("access_token", data.data.access_token);
         setLoading(false);
         navigate("/passwords")
       }

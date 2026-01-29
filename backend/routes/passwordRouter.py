@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Path, Depends, HTTPException, Query
+from fastapi import APIRouter, Path, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from config.connect import get_db
 from structures.schemas import PasswordRequest, DeleteRequest
@@ -37,15 +37,15 @@ async def postAccountPassword(
         print(f"Error fetching passwords: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch passwords")
 
-@router.get("/password/{user_id}")
+@router.get("/password")
 async def getAccountPassword(
-    user_id: UUID = Path(..., description="User ID for chat history"),
+    request: Request,
     db: Session = Depends(get_db),
     current_user_id : UUID = Depends(verify_jwt)
-):
-    if current_user_id != user_id:
-        raise HTTPException(status_code=400, detail="Unauthorised")
-    
+):  
+    if not request.cookies.get("refresh_token"):
+        return {"message" : "Refresh token expired"}
+      
     try:    
         passwords = db.query(PasswordModel).filter(PasswordModel.user_id == current_user_id).all()
 

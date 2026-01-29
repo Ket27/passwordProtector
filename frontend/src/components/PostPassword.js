@@ -1,6 +1,14 @@
 import { Save } from "lucide-react";
+import { useState } from "react";
+import { IoEyeOffOutline, IoEyeOutline } from "react-icons/io5";
 
 const PostPassword = ({ newAccount, setNewAccount, handleAddPassword, setShowAddForm }) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChange = () => {
+    setShowPassword((prevState) => prevState = !prevState)
+  }
+
     return (
         <div className="h-48 bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-lg rounded-2xl border border-white/30 p-6 shadow-xl">
               <div className="flex flex-col h-full justify-between">
@@ -17,15 +25,22 @@ const PostPassword = ({ newAccount, setNewAccount, handleAddPassword, setShowAdd
                     }
                     className="w-full px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
                   />
+                  <div className="flex items-center gap-2">
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="Password"
                     value={newAccount.password}
                     onChange={(e) =>
                       setNewAccount({ ...newAccount, password: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-purple-400" 
                   />
+                  {showPassword ? (
+                      <IoEyeOffOutline className="w-4 h-4 text-white cursor-pointer" onClick={handleChange}/>
+                    ) : (
+                      <IoEyeOutline className="w-4 h-4 text-white cursor-pointer" onClick={handleChange}/>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button
